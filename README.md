@@ -1,6 +1,6 @@
-# fcc
+# NoteMosaic
 
-A new Flutter project.
+A new Flutter Notes App project which is made implementing Firebase and Bloc logics.
 
 ## Getting Started
 
