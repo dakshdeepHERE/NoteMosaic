@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:bloc/bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 void main() {
   runApp(
@@ -10,9 +11,9 @@ void main() {
       debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+        primarySwatch: Colors.blue,
       ),
+      debugShowMaterialGrid: false,
       home: const HomePage(),
     ),
   );
@@ -25,23 +26,29 @@ abstract class LoadAction {
 
 @immutable
 class LoadPersonsAction implements LoadAction {
-  final PersonsURL url;
-
-  const LoadPersonsAction({required this.url}) : super();
+  final PersonUrl url;
+  const LoadPersonsAction({required this.url});
 }
 
-enum PersonsURL { persons1, persons2 }
+enum PersonUrl { persons1, persons2 }
 
-extension UrlString on PersonsURL {
+extension UrlString on PersonUrl {
   String get urlString {
     switch (this) {
-      case PersonsURL.persons1:
+      case PersonUrl.persons1:
         return 'http://127.0.0.1:5500/api/persons1.json';
-      case PersonsURL.persons2:
+      case PersonUrl.persons2:
         return 'http://127.0.0.1:5500/api/persons2.json';
     }
   }
 }
+
+Future<Iterable<Person>> getPersons(String url) => HttpClient()
+    .getUrl(Uri.parse(url))
+    .then((req) => req.close())
+    .then((resp) => resp.transform(utf8.decoder).join())
+    .then((str) => json.decode(str) as List<dynamic>)
+    .then((list) => list.map((e) => Person.fromJson(e)));
 
 @immutable
 class Person {
@@ -55,31 +62,6 @@ class Person {
         age = json['age'] as int;
 }
 
-Future<Iterable<Person>> getPerson(String url) => HttpClient()
-    .getUrl(Uri.parse(url)) //This gives us requests
-    .then((req) => req.close()) //Request becomes a response here
-    .then((resp) => resp
-        .transform(utf8.decoder)
-        .join()) // Response comes here and becomes a String
-    .then((str) => json.decode(str)
-        as List<dynamic>) // String comes here and become a List
-    .then(
-      (list) => list.map((e) => Person.fromJson(
-          e)), //List comes here and becomes an iterable of persons
-    );
-
-@immutable
-class FetchResult {
-  final Iterable<Person> persons;
-  final bool isRetrievedFromCache;
-
-  const FetchResult(
-      {required this.persons, required this.isRetrievedFromCache});
-  @override
-  String toString() =>
-      'FetchResult(isRetrievedFromCache = $isRetrievedFromCache, $persons)';
-}
-
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
@@ -87,14 +69,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        title: const Text(
-          'Home Page',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: const Text('Home Page'),
       ),
     );
   }
